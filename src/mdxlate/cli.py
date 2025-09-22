@@ -7,17 +7,9 @@ from pathlib import Path
 import typer
 
 from .client import make_client, Provider
-from .translator import Translator, ensure_user_prompt, DEFAULT_PROMPT_PATH
+from .translator import Translator
 
 app = typer.Typer(add_completion=False)
-
-def initialize_prompt() -> Path:
-    return ensure_user_prompt()
-
-@app.command()
-def init() -> None:
-    p = ensure_user_prompt()
-    print(str(p))
 
 
 def start_translation(
@@ -29,7 +21,6 @@ def start_translation(
         provider: Provider = "openai",
         api_key: str | None = None,
         base_url: str | None = None,
-        prompt_path: Path | None = None,
 ):
     client = make_client(provider=provider, api_key=api_key, base_url=base_url)
     translator = Translator(
@@ -37,10 +28,8 @@ def start_translation(
         base_language=base_language,
         languages=languages,
         model=model,
-        prompt_path=prompt_path or DEFAULT_PROMPT_PATH,
     )
     asyncio.run(translator.translate_directory(docs_src, out_dir))
-
 
 
 @app.command()
@@ -54,7 +43,6 @@ def run(
         api_key: str | None = typer.Option(None),
         api_env_key: str = typer.Option("OPENAI_API_KEY"),
         base_url: str | None = typer.Option(None),
-        prompt_path: Path | None = typer.Option(None),
 ) -> None:
     api_key = api_key or os.getenv(api_env_key)
     client = make_client(provider=provider, api_key=api_key, base_url=base_url)
@@ -63,6 +51,5 @@ def run(
         base_language=base_language,
         languages=languages,
         model=model,
-        prompt_path=prompt_path or DEFAULT_PROMPT_PATH,
     )
     asyncio.run(translator.translate_directory(docs_src, out_dir))

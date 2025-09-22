@@ -1,122 +1,128 @@
+from __future__ import annotations
+
 import asyncio
-import hashlib
-import json
 from pathlib import Path
 
 import tenacity
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionSystemMessageParam, \
+    ChatCompletionUserMessageParam
 from tenacity import stop_after_attempt, wait_exponential
 
-DEFAULT_HOME_DIR = Path.home() / ".mdxlate"
-DEFAULT_PROMPT_PATH = DEFAULT_HOME_DIR / "translation_instruction.txt"
-STATE_FILE_NAME = ".mdxlate.hashes.json"
+from mdxlate.cache import TranslationCache
 
 
-def ensure_user_prompt() -> Path:
-    DEFAULT_HOME_DIR.mkdir(parents=True, exist_ok=True)
-    if not DEFAULT_PROMPT_PATH.exists():
-        pkg_prompt = Path(__file__).parent / "translation_instruction.txt"
-        DEFAULT_PROMPT_PATH.write_text(pkg_prompt.read_text(encoding="utf-8"), encoding="utf-8")
-    return DEFAULT_PROMPT_PATH
+def default_translation_instruction_path() -> Path:
+    return Path(__file__).parent / "translation_instruction.txt"
 
 
-def _sha_str(s: str) -> str:
-    return hashlib.sha256(s.encode()).hexdigest()
+def read_default_translation_instruction() -> str:
+    p = default_translation_instruction_path()
+    return p.read_text(encoding="utf-8")
 
 
-def _sha_bytes(b: bytes) -> str:
-    return hashlib.sha256(b).hexdigest()
-
-
-def _state_path(root: Path) -> Path:
-    return root / STATE_FILE_NAME
-
-
-def _load_state(root: Path) -> dict:
-    p = _state_path(root)
-    if p.exists():
-        return json.loads(p.read_text(encoding="utf-8"))
-    return {}
-
-
-def _save_state(root: Path, state: dict) -> None:
-    _state_path(root).write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+def write_default_translation_instruction(dest: Path) -> Path:
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(read_default_translation_instruction(), encoding="utf-8")
+    return dest
 
 
 class Translator:
-    def __init__(self, client: AsyncOpenAI, base_language: str, languages: list[str], model: str,
-                 prompt_path: Path | None = None, max_concurrency: int = 8, force_translation: bool = False) -> None:
+    def __init__(
+            self,
+            client: AsyncOpenAI,
+            base_language: str,
+            languages: list[str],
+            model: str,
+            translation_instruction_text: str | None = None,
+            translation_instruction_path: Path | None = None,
+            max_concurrency: int = 8,
+            force_translation: bool = False,
+    ) -> None:
         self.client = client
         self.base_language = base_language
         self.languages = languages
         self.model = model
-        self.translation_instruction = (prompt_path or ensure_user_prompt()).read_text(encoding="utf-8").strip()
-        self.used_file_paths: set[str] = set()
+        if translation_instruction_text is not None:
+            self.translation_instruction = translation_instruction_text.strip()
+        elif translation_instruction_path is not None:
+            self.translation_instruction = Path(translation_instruction_path).read_text(encoding="utf-8").strip()
+        else:
+            self.translation_instruction = read_default_translation_instruction().strip()
+        self.used_output_paths: set[str] = set()
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.force_translation = force_translation
 
-    def _calc_key(self, rel: Path, lang: str, file_bytes: bytes) -> str:
-        file_hash = _sha_bytes(file_bytes)
-        cfg_hash = _sha_str("|".join([self.translation_instruction, self.model, lang]))
-        return _sha_str("|".join([str(rel).replace("\\", "/"), file_hash, cfg_hash]))
-
     @tenacity.retry(wait=wait_exponential(multiplier=2, min=2, max=60), stop=stop_after_attempt(6))
-    async def translate_text(self, content: str, target_lang: str) -> str:
-        r = await self.client.chat.completions.create(
+    async def translate_text(self, content: str, target_language: str) -> str:
+        response = await self.client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": self.translation_instruction},
-                {"role": "user", "content": f"Translate the following markdown to {target_lang}:\n\n{content}"},
-            ],
-            temperature=0.2,
+                ChatCompletionSystemMessageParam(
+                    role="system",
+                    content=self.translation_instruction),
+                ChatCompletionUserMessageParam(
+                    role="user",
+                    content=f"Translate the following markdown to {target_language}:\n\n{content}")],
+            temperature=0.2
         )
-        return r.choices[0].message.content or ""
 
-    def _mark_used(self, out_dir: Path, rel: Path) -> None:
+        return response.choices[0].message.content or ""
+
+    def _mark_used(self, output_dir: Path, relative_path: Path) -> None:
         for lang in self.languages:
-            self.used_file_paths.add(str(out_dir / lang / rel))
+            p = (output_dir / lang / relative_path).resolve()
+            self.used_output_paths.add(p.as_posix())
 
-    async def _write_one(self, lang: str, text: str, rel: Path, out_dir: Path) -> None:
+    async def _write_one(self, lang: str, text: str, relative_path: Path, output_dir: Path) -> None:
         async with self.semaphore:
-            t = text if lang == self.base_language else await self.translate_text(text, lang)
-            out_file = out_dir / lang / rel
+            translated = text if lang == self.base_language else await self.translate_text(text, lang)
+            out_file = output_dir / lang / relative_path
             out_file.parent.mkdir(parents=True, exist_ok=True)
-            out_file.write_text(t, encoding="utf-8")
+            out_file.write_text(translated, encoding="utf-8")
             print(out_file)
 
-    async def process_file(self, path: Path, root: Path, out_dir: Path, state: dict) -> None:
-        rel = path.relative_to(root)
-        self._mark_used(out_dir, rel)
-        b = path.read_bytes()
-        text = b.decode()
+    async def process_file(self, file_path: Path, source_root: Path, output_dir: Path, cache: TranslationCache) -> None:
+        relative_path = file_path.relative_to(source_root)
+        self._mark_used(output_dir, relative_path)
+        file_bytes = file_path.read_bytes()
+        text = file_bytes.decode()
         tasks: list[asyncio.Task] = []
         for lang in self.languages:
-            key = self._calc_key(rel, lang, b)
-            if not self.force_translation and state.get(lang, {}).get(str(rel)) == key:
+            key = cache.calc_key(
+                rel=relative_path,
+                lang=lang,
+                file_bytes=file_bytes,
+                prompt=self.translation_instruction,
+                model=self.model,
+            )
+            if not self.force_translation and cache.is_up_to_date(rel=relative_path, lang=lang, key=key):
                 continue
-            tasks.append(asyncio.create_task(self._write_one(lang, text, rel, out_dir)))
-            state.setdefault(lang, {})[str(rel)] = key
+            tasks.append(asyncio.create_task(self._write_one(lang, text, relative_path, output_dir)))
+            cache.mark(rel=relative_path, lang=lang, key=key)
         if tasks:
             await asyncio.gather(*tasks)
 
-    def clean_up_unused_files(self, out_dir: Path) -> None:
+    def clean_up_unused_files(self, output_dir: Path) -> None:
         for lang in self.languages:
-            p = out_dir / lang
-            if not p.exists():
+            lang_dir = output_dir / lang
+            if not lang_dir.exists():
                 continue
-            for f in p.rglob("*.md"):
-                if str(f) not in self.used_file_paths and f.is_file():
+            for f in lang_dir.rglob("*.md"):
+                if f.as_posix() not in self.used_output_paths and f.is_file():
                     f.unlink()
-            for d in reversed(list(p.rglob("*"))):
+            for d in reversed(list(lang_dir.rglob("*"))):
                 if d.is_dir() and not any(d.iterdir()):
                     d.rmdir()
 
-    async def translate_directory(self, docs_src: Path, out_dir: Path) -> None:
-        state = _load_state(docs_src)
+    async def translate_directory(self, source_dir: Path, output_dir: Path) -> None:
+        cache = TranslationCache(source_dir)
+        cache.load()
         tasks: list[asyncio.Task] = []
-        for md_file in docs_src.rglob("*.md"):
-            tasks.append(asyncio.create_task(self.process_file(md_file, docs_src, out_dir, state)))
+        for md_file in source_dir.rglob("*.md"):
+            tasks.append(asyncio.create_task(self.process_file(md_file, source_dir, output_dir, cache)))
         if tasks:
             await asyncio.gather(*tasks)
-        _save_state(docs_src, state)
-        self.clean_up_unused_files(out_dir)
+        cache.save()
+        self.clean_up_unused_files(output_dir)

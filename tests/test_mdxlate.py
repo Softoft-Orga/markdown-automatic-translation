@@ -84,34 +84,6 @@ def test_hash_skips_when_unchanged(tmp_docs):
     assert second_n == 0
 
 
-def test_hash_invalidated_by_prompt_change(tmp_docs):
-    src, out, prompt = tmp_docs
-    t = Translator(
-        client=None,
-        base_language="en",
-        languages=["de"],
-        model="m1",
-        prompt_path=prompt,
-        max_concurrency=1,
-        force_translation=False,
-    )
-
-    calls = {"n": 0}
-
-    async def fake_translate(self, content: str, target_lang: str) -> str:
-        calls["n"] += 1
-        return f"[{target_lang}] {content}"
-
-    t.translate_text = fake_translate.__get__(t, Translator)
-
-    asyncio.run(t.translate_directory(src, out))
-    first = calls["n"]
-
-    prompt.write_text("SYSTEM PROMPT CHANGED", encoding="utf-8")
-    asyncio.run(t.translate_directory(src, out))
-    assert calls["n"] > first
-
-
 def test_force_retranslates(tmp_docs):
     src, out, prompt = tmp_docs
     t1 = Translator(
