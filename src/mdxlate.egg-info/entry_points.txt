@@ -1,0 +1,2 @@
+[console_scripts]
+mdxlate = mdxlate.cli:app

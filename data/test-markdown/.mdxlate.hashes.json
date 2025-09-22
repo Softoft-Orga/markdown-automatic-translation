@@ -1,0 +1,12 @@
+{
+  "de": {
+    "en\\index.md": "af742d8a56cef8f3f965dc6c2345153039b9e2e303432f22c35ee52a44393d3b",
+    "en\\test.md": "4b65d5cea1c7376ef6d26f97bd86b5b0f22cee4563c083d5d58fb78b35d9ea66",
+    "en\\nested\\nested_md_file.md": "e17a60b17d0d1eb9e241d939c79a14707279272b41a237a9769dddba44824624"
+  },
+  "fr": {
+    "en\\index.md": "2bae17e67b00af10816ac7cef058bf3019efed8e75c8e781c28531dfbf30759f",
+    "en\\test.md": "229a71b912fd1220bd3a44b7ec19abf24b9b256e089eba2f02c3799e7c3b21d5",
+    "en\\nested\\nested_md_file.md": "2f7a73448f3e77eec10978314dff3d2e4efc69e653487ab0735d5779eb5dd6ed"
+  }
+}

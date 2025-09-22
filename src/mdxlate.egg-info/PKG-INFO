@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: mdxlate
+Version: 0.1.0
+Summary: Markdown translations with editable prompt
+Requires-Python: >=3.10
+Requires-Dist: typer>=0.12
+Requires-Dist: openai>=1.40
+Requires-Dist: tenacity>=8.2
+Requires-Dist: pytest>=8.4.2

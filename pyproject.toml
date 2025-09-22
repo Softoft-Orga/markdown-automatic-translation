@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mdxlate"
+version = "0.1.0"
+description = "Markdown translations with editable prompt"
+requires-python = ">=3.10"
+dependencies = [
+    "typer>=0.12",
+    "openai>=1.40",
+    "tenacity>=8.2",
+    "pytest>=8.4.2",
+]
+
+[project.scripts]
+mdxlate = "mdxlate.cli:app"
+
+[tool.setuptools.package-data]
+mdxlate = ["resources/translation_instruction.txt"]

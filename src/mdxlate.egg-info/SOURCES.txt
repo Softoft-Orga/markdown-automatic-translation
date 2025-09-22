@@ -1,0 +1,14 @@
+pyproject.toml
+src/main.py
+src/mdxlate/__init__.py
+src/mdxlate/cli.py
+src/mdxlate/client.py
+src/mdxlate/start_translation.py
+src/mdxlate/translator.py
+src/mdxlate.egg-info/PKG-INFO
+src/mdxlate.egg-info/SOURCES.txt
+src/mdxlate.egg-info/dependency_links.txt
+src/mdxlate.egg-info/entry_points.txt
+src/mdxlate.egg-info/requires.txt
+src/mdxlate.egg-info/top_level.txt
+tests/test_mdxlate.py
