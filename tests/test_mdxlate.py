@@ -3,10 +3,10 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
+# Ensure local src/ is importable before any mdxlate imports
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+import pytest
 from mdxlate.translator import Translator
 
 
@@ -61,7 +61,7 @@ def test_translate_directory_uses_cache(sample_docs):
         base_language="en",
         languages=["de", "fr"],
         model="m1",
-        translation_instruction_path=prompt,
+        translation_instruction_text="SYSTEM PROMPT",
         max_concurrency=2,
         force_translation=False,
     )

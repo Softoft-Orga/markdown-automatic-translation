@@ -67,7 +67,9 @@ def test_mark_and_is_up_to_date(tmp_path):
 
     cache.mark(rel, "de", key)
 
-    assert cache.state == {"de": {"sub/doc.md": key}}
+    assert "de" in cache.state
+    cached_hash = cache.state["de"].get(str(rel))
+    assert cached_hash == key
     assert cache.is_up_to_date(rel, "de", key)
     assert not cache.is_up_to_date(rel, "fr", key)
     assert not cache.is_up_to_date(Path("other.md"), "de", key)

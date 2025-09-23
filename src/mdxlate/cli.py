@@ -17,7 +17,7 @@ def start_translation(
         out_dir: Path,
         base_language: str,
         languages: list[str],
-        model: str = "gpt-4o-mini",
+        model: str = "google/gemini-2.5-flash-lite",
         provider: Provider = "openai",
         api_key: str | None = None,
         base_url: str | None = None,
