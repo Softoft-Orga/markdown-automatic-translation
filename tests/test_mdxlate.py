@@ -59,9 +59,9 @@ def test_translate_directory_uses_cache(sample_docs):
     translator = Translator(
         client=None,
         base_language="en",
-        languages=["en", "de"],
-        model="test-model",
-        translation_instruction_text="SYSTEM PROMPT",
+        languages=["de", "fr"],
+        model="m1",
+        translation_instruction_path=prompt,
         max_concurrency=2,
         force_translation=False,
     )
