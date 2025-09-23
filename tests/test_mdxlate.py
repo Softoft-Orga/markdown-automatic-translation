@@ -1,135 +1,137 @@
 import asyncio
 import json
-import time
+import sys
 from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from mdxlate.translator import Translator
 
 
 @pytest.fixture
-def tmp_docs(tmp_path: Path):
+def sample_docs(tmp_path: Path):
     src = tmp_path / "docs"
     out = tmp_path / "out"
     src.mkdir()
     (src / "a.md").write_text("# A\n\nHello world", encoding="utf-8")
     (src / "sub").mkdir()
-    (src / "sub" / "b.md").write_text("B text", encoding="utf-8")
-    prompt = tmp_path / "prompt.txt"
-    prompt.write_text("SYSTEM PROMPT", encoding="utf-8")
-    return src, out, prompt
+    (src / "sub" / "b.md").write_text("Sub page", encoding="utf-8")
+    return src, out
 
 
-@pytest.mark.parametrize("langs", [["de"], ["de", "fr"]])
-def test_translate_directory_creates_outputs(tmp_docs, langs):
-    src, out, prompt = tmp_docs
-    t = Translator(
+@pytest.mark.parametrize("languages", [["en", "de"], ["en", "de", "fr"]])
+def test_translate_directory_writes_expected_files(sample_docs, languages):
+    src, out = sample_docs
+    translator = Translator(
         client=None,
         base_language="en",
-        languages=langs,
+        languages=languages,
         model="test-model",
-        prompt_path=prompt,
+        translation_instruction_text="SYSTEM PROMPT",
         max_concurrency=4,
         force_translation=False,
     )
 
-    calls = []
+    calls: list[str] = []
 
     async def fake_translate(self, content: str, target_lang: str) -> str:
         calls.append(target_lang)
         return f"[{target_lang}] {content}"
 
-    t.translate_text = fake_translate.__get__(t, Translator)
+    translator.translate_text = fake_translate.__get__(translator, Translator)
 
-    asyncio.run(t.translate_directory(src, out))
+    asyncio.run(translator.translate_directory(src, out))
 
-    for lang in langs:
+    for lang in languages:
         assert (out / lang / "a.md").exists()
         assert (out / lang / "sub" / "b.md").exists()
-        if lang == "en":
-            assert (out / "en" / "a.md").read_text(encoding="utf-8").startswith("# A")
-        else:
-            assert (out / lang / "a.md").read_text(encoding="utf-8").startswith("[")
-    assert set(calls) == set([l for l in langs if l != "en"])
+
+    base_content = (out / "en" / "a.md").read_text(encoding="utf-8")
+    assert base_content.startswith("# A")
+
+    assert set(calls) == {lang for lang in languages if lang != "en"}
 
 
-def test_hash_skips_when_unchanged(tmp_docs):
-    src, out, prompt = tmp_docs
-    t = Translator(
+def test_translate_directory_uses_cache(sample_docs):
+    src, out = sample_docs
+    translator = Translator(
         client=None,
         base_language="en",
-        languages=["de", "fr"],
-        model="m1",
-        prompt_path=prompt,
+        languages=["en", "de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
         max_concurrency=2,
         force_translation=False,
     )
 
-    calls = {"n": 0}
+    call_count = {"n": 0}
 
     async def fake_translate(self, content: str, target_lang: str) -> str:
-        calls["n"] += 1
+        call_count["n"] += 1
         return f"[{target_lang}] {content}"
 
-    t.translate_text = fake_translate.__get__(t, Translator)
+    translator.translate_text = fake_translate.__get__(translator, Translator)
 
-    asyncio.run(t.translate_directory(src, out))
-    first_n = calls["n"]
+    asyncio.run(translator.translate_directory(src, out))
+    first_run_calls = call_count["n"]
 
-    time.sleep(0.01)
-    asyncio.run(t.translate_directory(src, out))
-    second_n = calls["n"] - first_n
-    assert first_n > 0
-    assert second_n == 0
+    asyncio.run(translator.translate_directory(src, out))
+    second_run_calls = call_count["n"] - first_run_calls
+
+    assert first_run_calls > 0
+    assert second_run_calls == 0
 
 
-def test_force_retranslates(tmp_docs):
-    src, out, prompt = tmp_docs
-    t1 = Translator(
+def test_force_translation_bypasses_cache(sample_docs):
+    src, out = sample_docs
+    translator = Translator(
         client=None,
         base_language="en",
-        languages=["de"],
-        model="m1",
-        prompt_path=prompt,
+        languages=["en", "de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
         max_concurrency=1,
         force_translation=False,
     )
 
-    async def fake1(self, content: str, target_lang: str) -> str:
+    async def fake_v1(self, content: str, target_lang: str) -> str:
         return f"[{target_lang}] v1 {content}"
 
-    t1.translate_text = fake1.__get__(t1, Translator)
-    asyncio.run(t1.translate_directory(src, out))
-    v1 = (out / "de" / "a.md").read_text(encoding="utf-8")
+    translator.translate_text = fake_v1.__get__(translator, Translator)
+    asyncio.run(translator.translate_directory(src, out))
 
-    t2 = Translator(
+    first_output = (out / "de" / "a.md").read_text(encoding="utf-8")
+
+    translator_force = Translator(
         client=None,
         base_language="en",
-        languages=["de"],
-        model="m1",
-        prompt_path=prompt,
+        languages=["en", "de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
         max_concurrency=1,
         force_translation=True,
     )
 
-    async def fake2(self, content: str, target_lang: str) -> str:
+    async def fake_v2(self, content: str, target_lang: str) -> str:
         return f"[{target_lang}] v2 {content}"
 
-    t2.translate_text = fake2.__get__(t2, Translator)
-    asyncio.run(t2.translate_directory(src, out))
-    v2 = (out / "de" / "a.md").read_text(encoding="utf-8")
-    assert v1 != v2
+    translator_force.translate_text = fake_v2.__get__(translator_force, Translator)
+    asyncio.run(translator_force.translate_directory(src, out))
+
+    second_output = (out / "de" / "a.md").read_text(encoding="utf-8")
+    assert first_output != second_output
 
 
-def test_state_file_structure(tmp_docs):
-    src, out, prompt = tmp_docs
-    t = Translator(
+def test_cleanup_removes_stale_outputs(sample_docs):
+    src, out = sample_docs
+    translator = Translator(
         client=None,
         base_language="en",
-        languages=["de", "fr"],
-        model="m1",
-        prompt_path=prompt,
+        languages=["en", "de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
         max_concurrency=1,
         force_translation=False,
     )
@@ -137,11 +139,50 @@ def test_state_file_structure(tmp_docs):
     async def fake(self, content: str, target_lang: str) -> str:
         return f"[{target_lang}] {content}"
 
-    t.translate_text = fake.__get__(t, Translator)
-    asyncio.run(t.translate_directory(src, out))
+    translator.translate_text = fake.__get__(translator, Translator)
+    asyncio.run(translator.translate_directory(src, out))
+
+    (src / "sub" / "b.md").unlink()
+
+    translator_cleanup = Translator(
+        client=None,
+        base_language="en",
+        languages=["en", "de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+        max_concurrency=1,
+        force_translation=False,
+    )
+
+    translator_cleanup.translate_text = fake.__get__(translator_cleanup, Translator)
+    asyncio.run(translator_cleanup.translate_directory(src, out))
+
+    assert not (out / "en" / "sub" / "b.md").exists()
+    assert not (out / "de" / "sub" / "b.md").exists()
+    assert not (out / "en" / "sub").exists()
+    assert not (out / "de" / "sub").exists()
+
+
+def test_state_file_contains_language_entries(sample_docs):
+    src, out = sample_docs
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["en", "de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+        max_concurrency=1,
+        force_translation=False,
+    )
+
+    async def fake(self, content: str, target_lang: str) -> str:
+        return f"[{target_lang}] {content}"
+
+    translator.translate_text = fake.__get__(translator, Translator)
+    asyncio.run(translator.translate_directory(src, out))
 
     state_path = src / ".mdxlate.hashes.json"
     assert state_path.exists()
     data = json.loads(state_path.read_text(encoding="utf-8"))
-    assert "de" in data and "fr" in data
-    assert "a.md" in "".join(data["de"].keys())
+    assert "en" in data and "de" in data
+    assert "a.md" in "".join(data["en"].keys())
