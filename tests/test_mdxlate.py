@@ -29,7 +29,7 @@ def test_translate_directory_creates_outputs(tmp_docs, langs):
         base_language="en",
         languages=langs,
         model="test-model",
-        prompt_path=prompt,
+        translation_instruction_path=prompt,
         max_concurrency=4,
         force_translation=False,
     )
@@ -61,7 +61,7 @@ def test_hash_skips_when_unchanged(tmp_docs):
         base_language="en",
         languages=["de", "fr"],
         model="m1",
-        prompt_path=prompt,
+        translation_instruction_path=prompt,
         max_concurrency=2,
         force_translation=False,
     )
@@ -91,7 +91,7 @@ def test_force_retranslates(tmp_docs):
         base_language="en",
         languages=["de"],
         model="m1",
-        prompt_path=prompt,
+        translation_instruction_path=prompt,
         max_concurrency=1,
         force_translation=False,
     )
@@ -108,7 +108,7 @@ def test_force_retranslates(tmp_docs):
         base_language="en",
         languages=["de"],
         model="m1",
-        prompt_path=prompt,
+        translation_instruction_path=prompt,
         max_concurrency=1,
         force_translation=True,
     )
@@ -129,7 +129,7 @@ def test_state_file_structure(tmp_docs):
         base_language="en",
         languages=["de", "fr"],
         model="m1",
-        prompt_path=prompt,
+        translation_instruction_path=prompt,
         max_concurrency=1,
         force_translation=False,
     )
