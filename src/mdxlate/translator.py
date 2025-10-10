@@ -117,6 +117,31 @@ class Translator:
                     d.rmdir()
 
     async def translate_directory(self, source_dir: Path, output_dir: Path) -> None:
+        # Validate that source and output directories don't overlap
+        source_resolved = source_dir.resolve()
+        output_resolved = output_dir.resolve()
+        
+        # Check if source is inside output or output is inside source
+        try:
+            source_resolved.relative_to(output_resolved)
+            raise ValueError(
+                f"Invalid directory configuration: source directory '{source_dir}' is inside output directory '{output_dir}'. "
+                f"This would cause recursive translation. Please use non-overlapping directories."
+            )
+        except ValueError as e:
+            if "is inside output directory" in str(e):
+                raise
+        
+        try:
+            output_resolved.relative_to(source_resolved)
+            raise ValueError(
+                f"Invalid directory configuration: output directory '{output_dir}' is inside source directory '{source_dir}'. "
+                f"This would cause recursive translation. Please use non-overlapping directories."
+            )
+        except ValueError as e:
+            if "is inside source directory" in str(e):
+                raise
+        
         cache = TranslationCache(source_dir)
         cache.load()
         tasks: list[asyncio.Task] = []
