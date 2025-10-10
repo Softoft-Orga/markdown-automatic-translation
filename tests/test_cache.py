@@ -83,7 +83,7 @@ def test_mark_and_is_up_to_date_with_different_path_styles(tmp_path):
     prompt = "prompt"
     model = "model"
 
-    # Use Windows-style path
+    # Test with Windows-style path (using raw string to get backslashes)
     rel_windows = Path(r"dir\file.md")
 
     # Calculate key and mark with Windows-style path
@@ -102,3 +102,13 @@ def test_mark_and_is_up_to_date_with_different_path_styles(tmp_path):
         "Cache should find entry marked with Windows path when checking with POSIX path"
     assert cache.is_up_to_date(rel_windows, "de", key), \
         "Cache should find entry marked with Windows path when checking with Windows path"
+
+    # Verify state uses normalized paths (forward slashes)
+    assert "dir/file.md" in cache.state["de"], \
+        "State should store paths with forward slashes for cross-platform compatibility"
+    
+    # Test the reverse: mark with POSIX, check with Windows-style
+    cache2 = TranslationCache(tmp_path)
+    cache2.mark(rel_posix, "fr", key_posix)
+    assert cache2.is_up_to_date(rel_windows, "fr", key_posix), \
+        "Cache should find entry marked with POSIX path when checking with Windows path"
