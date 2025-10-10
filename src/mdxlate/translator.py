@@ -117,6 +117,18 @@ class Translator:
                     d.rmdir()
 
     async def translate_directory(self, source_dir: Path, output_dir: Path) -> None:
+        """
+        Translate all markdown files from source_dir to output_dir for configured languages.
+        
+        Validates that source and output directories don't overlap to prevent recursive translation.
+        
+        Args:
+            source_dir: Directory containing source markdown files
+            output_dir: Directory where translated files will be written
+            
+        Raises:
+            ValueError: If source and output directories overlap (same, parent-child relationship)
+        """
         # Validate that source and output directories don't overlap
         source_resolved = source_dir.resolve()
         output_resolved = output_dir.resolve()
