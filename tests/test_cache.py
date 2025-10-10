@@ -68,8 +68,37 @@ def test_mark_and_is_up_to_date(tmp_path):
     cache.mark(rel, "de", key)
 
     assert "de" in cache.state
-    cached_hash = cache.state["de"].get(str(rel))
+    # State should use normalized (forward slash) paths
+    cached_hash = cache.state["de"].get(str(rel).replace("\\", "/"))
     assert cached_hash == key
     assert cache.is_up_to_date(rel, "de", key)
     assert not cache.is_up_to_date(rel, "fr", key)
     assert not cache.is_up_to_date(Path("other.md"), "de", key)
+
+
+def test_mark_and_is_up_to_date_with_different_path_styles(tmp_path):
+    """Test that path normalization works consistently across different path styles."""
+    cache = TranslationCache(tmp_path)
+    file_bytes = b"content"
+    prompt = "prompt"
+    model = "model"
+
+    # Use Windows-style path
+    rel_windows = Path(r"dir\file.md")
+
+    # Calculate key and mark with Windows-style path
+    key = cache.calc_key(rel_windows, "de", file_bytes, prompt, model)
+    cache.mark(rel_windows, "de", key)
+
+    # Should find the cache entry with POSIX-style path
+    rel_posix = Path("dir/file.md")
+    key_posix = cache.calc_key(rel_posix, "de", file_bytes, prompt, model)
+
+    # Keys should be the same (already tested in test_calc_key_normalizes_paths_and_depends_on_inputs)
+    assert key == key_posix
+
+    # CRITICAL: is_up_to_date should return True regardless of path style used
+    assert cache.is_up_to_date(rel_posix, "de", key_posix), \
+        "Cache should find entry marked with Windows path when checking with POSIX path"
+    assert cache.is_up_to_date(rel_windows, "de", key), \
+        "Cache should find entry marked with Windows path when checking with Windows path"
