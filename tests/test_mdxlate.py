@@ -10,6 +10,18 @@ import pytest
 from mdxlate.translator import Translator
 
 
+def test_start_translation_is_in_correct_module():
+    """Verify start_translation is only in start_translation module, not in cli."""
+    from mdxlate import cli
+    from mdxlate import start_translation
+    
+    # Should exist in start_translation module
+    assert hasattr(start_translation, 'start_translation')
+    
+    # Should NOT exist in cli module
+    assert not hasattr(cli, 'start_translation')
+
+
 @pytest.fixture
 def sample_docs(tmp_path: Path):
     src = tmp_path / "docs"
