@@ -267,6 +267,5 @@ def test_translate_directory_rejects_same_directory(tmp_path: Path):
     )
     
     # Using the same directory for both source and output should fail
-    # It will be caught by one of the overlap checks
-    with pytest.raises(ValueError, match="Invalid directory configuration"):
+    with pytest.raises(ValueError, match="source and output directories are the same"):
         asyncio.run(translator.translate_directory(src, src))

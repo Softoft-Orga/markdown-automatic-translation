@@ -121,26 +121,40 @@ class Translator:
         source_resolved = source_dir.resolve()
         output_resolved = output_dir.resolve()
         
-        # Check if source is inside output or output is inside source
+        # Check if directories are the same
+        if source_resolved == output_resolved:
+            raise ValueError(
+                f"Invalid directory configuration: source and output directories are the same ('{source_dir}'). "
+                f"This would cause recursive translation. Please use non-overlapping directories."
+            )
+        
+        # Check if source is inside output
         try:
             source_resolved.relative_to(output_resolved)
+            # If relative_to succeeds, source is inside output
             raise ValueError(
                 f"Invalid directory configuration: source directory '{source_dir}' is inside output directory '{output_dir}'. "
                 f"This would cause recursive translation. Please use non-overlapping directories."
             )
         except ValueError as e:
-            if "is inside output directory" in str(e):
+            # If the error message contains our custom message, re-raise it
+            if "Invalid directory configuration" in str(e):
                 raise
+            # Otherwise, it's from relative_to failing, which is expected - continue
         
+        # Check if output is inside source
         try:
             output_resolved.relative_to(source_resolved)
+            # If relative_to succeeds, output is inside source
             raise ValueError(
                 f"Invalid directory configuration: output directory '{output_dir}' is inside source directory '{source_dir}'. "
                 f"This would cause recursive translation. Please use non-overlapping directories."
             )
         except ValueError as e:
-            if "is inside source directory" in str(e):
+            # If the error message contains our custom message, re-raise it
+            if "Invalid directory configuration" in str(e):
                 raise
+            # Otherwise, it's from relative_to failing, which is expected - continue
         
         cache = TranslationCache(source_dir)
         cache.load()
