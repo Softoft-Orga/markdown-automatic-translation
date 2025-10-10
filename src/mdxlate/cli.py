@@ -13,6 +13,21 @@ app = typer.Typer(add_completion=False)
 
 
 @app.command()
+def init(
+    prompt_path: Path = typer.Option(
+        Path.home() / ".mdxlate" / "translation_instruction.txt",
+        help="Path for editable prompt template"
+    )
+) -> None:
+    """Initialize editable translation prompt file."""
+    from .translator import write_default_translation_instruction
+    result = write_default_translation_instruction(prompt_path)
+    typer.echo(f"✓ Created prompt template at: {result}")
+    typer.echo(f"\nEdit this file to customize translations.")
+    typer.echo(f"Use: mdx run ... --prompt-path {result}")
+
+
+@app.command()
 def run(
         docs_src: Path = typer.Argument(),
         out_dir: Path = typer.Argument(),
