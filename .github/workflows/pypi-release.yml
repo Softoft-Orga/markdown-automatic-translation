@@ -17,4 +17,4 @@ jobs:
         with:
           python-version-file: pyproject.toml
       - run: uv build
-      - run: uv publish --token "${{ secrets.PYPI_TOKEN }}"
+      - run: uv publish
