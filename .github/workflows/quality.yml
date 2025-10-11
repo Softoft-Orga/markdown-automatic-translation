@@ -22,20 +22,16 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        pip install flake8 mypy
+        pip install ruff mypy
     
-    - name: Lint with flake8 (critical errors)
+    - name: Lint with ruff
       run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 src/mdxlate --count --select=E9,F63,F7,F82 --show-source --statistics
+        ruff check src tests
     
-    - name: Lint with flake8 (style warnings)
+    - name: Format check with ruff
       run: |
-        # Exit-zero treats all errors as warnings
-        flake8 src/mdxlate --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
-      continue-on-error: true
+        ruff format --check src tests
     
     - name: Type check with mypy
       run: |
-        mypy src/mdxlate --ignore-missing-imports
-      continue-on-error: true
+        mypy src --ignore-missing-imports
