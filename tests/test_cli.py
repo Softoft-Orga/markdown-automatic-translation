@@ -89,5 +89,6 @@ def test_run_help_shows_cache_dir_option():
     # The output contains ANSI codes, so we check for "cache" and "dir" separately
     assert "cache" in result.stdout.lower()
     assert "dir" in result.stdout.lower()
-    assert "Directory for cache file" in result.stdout
+    # The text may be split across lines, so check for components
+    assert "Directory for cache" in result.stdout
 
