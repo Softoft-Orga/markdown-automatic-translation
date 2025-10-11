@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mdxlate = "mdxlate.cli:app"
+mdx = "mdxlate.cli:app"
 
 [tool.setuptools.package-data]
 mdxlate = ["resources/translation_instruction.txt"]
