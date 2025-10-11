@@ -92,9 +92,10 @@ def test_run_help_shows_cache_dir_option():
     assert result.exit_code == 0
     # The output contains ANSI codes, so we need to strip them for reliable text matching
     import re
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    clean_output = ansi_escape.sub('', result.stdout)
-    
+
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    clean_output = ansi_escape.sub("", result.stdout)
+
     assert "cache" in clean_output.lower()
     assert "dir" in clean_output.lower()
     # The text may be wrapped across lines in the formatted output
