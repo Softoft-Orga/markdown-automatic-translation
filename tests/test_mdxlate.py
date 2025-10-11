@@ -232,6 +232,8 @@ def test_cache_dir_writes_to_custom_location(sample_docs, tmp_path):
         languages=["de"],
         model="test-model",
         translation_instruction_text="SYSTEM PROMPT",
+        max_concurrency=1,
+        force_translation=False,
         cache_dir=cache_location,
     )
     
@@ -283,6 +285,13 @@ def test_translate_directory_allows_sibling_directories(tmp_path: Path):
     src.mkdir()
     (src / "test.md").write_text("# Test", encoding="utf-8")
     
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+    )
 
     translator = Translator(
         client=None,
@@ -298,6 +307,7 @@ def test_translate_directory_allows_sibling_directories(tmp_path: Path):
     translator.translate_text = fake_translate.__get__(translator, Translator)
     asyncio.run(translator.translate_directory(src, out))
 
+    # Should not raise an error and should create output
     # Should succeed without errors
     assert (out / "de" / "test.md").exists()
 
@@ -354,4 +364,111 @@ def test_translate_directory_rejects_same_directory(tmp_path: Path):
     # Using the same directory for both source and output should fail
     with pytest.raises(ValueError, match="source and output directories are the same"):
         asyncio.run(translator.translate_directory(src, src))
+
+
+def test_translate_directory_handles_translation_failures(sample_docs):
+    """Test that translation continues when some files fail and generates a failure report."""
+    src, out = sample_docs
+    
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de", "fr"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    # Make translation fail for one specific file
+    async def fake_translate_with_failure(self, content: str, target_lang: str) -> str:
+        if "Sub page" in content:
+            raise RuntimeError("Simulated translation failure")
+        return f"[{target_lang}] {content}"
+    
+    translator.translate_text = fake_translate_with_failure.__get__(translator, Translator)
+    
+    # Should not raise an exception even though one file fails
+    asyncio.run(translator.translate_directory(src, out))
+    
+    # Successful file should be translated
+    assert (out / "de" / "a.md").exists()
+    assert (out / "fr" / "a.md").exists()
+    
+    # Failed file should not exist (or be incomplete)
+    # The file might exist but won't be complete - the important thing is the process continues
+    
+    # Failure report should exist
+    from mdxlate.cache import STATE_FILE_NAME
+    failure_report = src / ".mdxlate.failures.json"
+    assert failure_report.exists()
+    
+    # Check failure report content
+    failures_data = json.loads(failure_report.read_text(encoding="utf-8"))
+    assert "failures" in failures_data
+    assert len(failures_data["failures"]) > 0
+    
+    # Check that the failed file is in the report
+    failed_files = [f["file"] for f in failures_data["failures"]]
+    assert any("b.md" in f for f in failed_files)
+
+
+def test_translate_directory_removes_failure_report_on_success(sample_docs):
+    """Test that failure report is removed when all translations succeed."""
+    src, out = sample_docs
+    
+    # First, create a failure report
+    failure_report = src / ".mdxlate.failures.json"
+    failure_report.write_text('{"failures": [{"file": "test.md", "error": "test"}]}', encoding="utf-8")
+    
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    async def fake_translate(self, content: str, target_lang: str) -> str:
+        return f"[{target_lang}] {content}"
+    
+    translator.translate_text = fake_translate.__get__(translator, Translator)
+    
+    # Run translation successfully
+    asyncio.run(translator.translate_directory(src, out))
+    
+    # Failure report should be removed
+    assert not failure_report.exists()
+
+
+def test_translate_directory_saves_cache_despite_failures(sample_docs):
+    """Test that cache is saved even when some files fail."""
+    src, out = sample_docs
+    
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    # Make translation fail for one file but succeed for another
+    async def fake_translate_with_partial_failure(self, content: str, target_lang: str) -> str:
+        if "Sub page" in content:
+            raise RuntimeError("Simulated translation failure")
+        return f"[{target_lang}] {content}"
+    
+    translator.translate_text = fake_translate_with_partial_failure.__get__(translator, Translator)
+    
+    # Run translation
+    asyncio.run(translator.translate_directory(src, out))
+    
+    # Cache should still be saved
+    from mdxlate.cache import STATE_FILE_NAME
+    cache_file = src / STATE_FILE_NAME
+    assert cache_file.exists()
+    
+    # Cache should contain entry for successful translation
+    cache_data = json.loads(cache_file.read_text(encoding="utf-8"))
+    assert "de" in cache_data
+    assert any("a.md" in key for key in cache_data["de"].keys())
 

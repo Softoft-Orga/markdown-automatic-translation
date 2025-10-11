@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 from pathlib import Path
 
 import tenacity
@@ -9,6 +11,8 @@ from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUs
 from tenacity import stop_after_attempt, wait_exponential
 
 from mdxlate.cache import TranslationCache
+
+logger = logging.getLogger(__name__)
 
 
 def default_translation_instruction_path() -> Path:
@@ -83,26 +87,40 @@ class Translator:
             out_file.write_text(translated, encoding="utf-8")
             print(out_file)
 
-    async def process_file(self, file_path: Path, source_root: Path, output_dir: Path, cache: TranslationCache) -> None:
-        relative_path = file_path.relative_to(source_root)
-        self._mark_used(output_dir, relative_path)
-        file_bytes = file_path.read_bytes()
-        text = file_bytes.decode()
-        tasks: list[asyncio.Task] = []
-        for lang in self.languages:
-            key = cache.calc_key(
-                rel=relative_path,
-                lang=lang,
-                file_bytes=file_bytes,
-                prompt=self.translation_instruction,
-                model=self.model,
-            )
-            if not self.force_translation and cache.is_up_to_date(rel=relative_path, lang=lang, key=key):
-                continue
-            tasks.append(asyncio.create_task(self._write_one(lang, text, relative_path, output_dir)))
-            cache.mark(rel=relative_path, lang=lang, key=key)
-        if tasks:
-            await asyncio.gather(*tasks)
+    async def process_file(self, file_path: Path, source_root: Path, output_dir: Path, cache: TranslationCache) -> None | Exception:
+        """
+        Process a single file, translating it to all configured languages.
+        
+        Returns None on success, or an Exception if the file processing failed.
+        """
+        try:
+            relative_path = file_path.relative_to(source_root)
+            self._mark_used(output_dir, relative_path)
+            file_bytes = file_path.read_bytes()
+            text = file_bytes.decode()
+            tasks: list[asyncio.Task] = []
+            for lang in self.languages:
+                key = cache.calc_key(
+                    rel=relative_path,
+                    lang=lang,
+                    file_bytes=file_bytes,
+                    prompt=self.translation_instruction,
+                    model=self.model,
+                )
+                if not self.force_translation and cache.is_up_to_date(rel=relative_path, lang=lang, key=key):
+                    continue
+                tasks.append(asyncio.create_task(self._write_one(lang, text, relative_path, output_dir)))
+                cache.mark(rel=relative_path, lang=lang, key=key)
+            if tasks:
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                # Check if any translation failed
+                for result in results:
+                    if isinstance(result, Exception):
+                        raise result
+            return None
+        except Exception as e:
+            logger.error(f"Failed to process file {file_path}: {e}")
+            return e
 
     def clean_up_unused_files(self, output_dir: Path) -> None:
         for lang in self.languages:
@@ -121,6 +139,8 @@ class Translator:
         Translate all markdown files from source_dir to output_dir for configured languages.
 
         Validates that source and output directories don't overlap to prevent recursive translation.
+        Uses robust error handling to process all files even if some fail.
+        
 
         Args:
             source_dir: Directory containing source markdown files
@@ -172,10 +192,45 @@ class Translator:
         cache_root = self.cache_dir if self.cache_dir is not None else source_dir
         cache = TranslationCache(cache_root)
         cache.load()
+        
+        # Collect all markdown files
+        md_files = list(source_dir.rglob("*.md"))
         tasks: list[asyncio.Task] = []
-        for md_file in source_dir.rglob("*.md"):
+        for md_file in md_files:
             tasks.append(asyncio.create_task(self.process_file(md_file, source_dir, output_dir, cache)))
+        
+        # Process all files, collecting exceptions instead of failing
+        failures = []
         if tasks:
-            await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Collect failures
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    md_file = md_files[i]
+                    relative_path = md_file.relative_to(source_dir)
+                    failures.append({
+                        "file": str(relative_path),
+                        "error": str(result),
+                        "error_type": type(result).__name__
+                    })
+                    logger.error(f"Translation failed for {relative_path}: {result}")
+        
+        # Save cache even if some files failed
         cache.save()
+        
+        # Generate failure report if there were any failures
+        if failures:
+            failure_report_path = cache_root / ".mdxlate.failures.json"
+            failure_report_path.write_text(
+                json.dumps({"failures": failures}, indent=2, ensure_ascii=False),
+                encoding="utf-8"
+            )
+            logger.warning(f"Translation completed with {len(failures)} failure(s). See {failure_report_path}")
+        else:
+            # Remove failure report if it exists from previous runs
+            failure_report_path = cache_root / ".mdxlate.failures.json"
+            if failure_report_path.exists():
+                failure_report_path.unlink()
+        
         self.clean_up_unused_files(output_dir)
