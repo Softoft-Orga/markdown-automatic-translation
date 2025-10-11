@@ -2,7 +2,6 @@ title: mdxlate
 description: Translate Markdown docs into multiple languages using LLMs
 url: "https://mdxlate.softoft.de"
 baseurl: ""
-timezone: Europe/Berlin
 
 markdown: kramdown
 kramdown:
