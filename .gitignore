@@ -19,6 +19,16 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/

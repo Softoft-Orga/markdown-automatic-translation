@@ -200,6 +200,13 @@ def test_state_file_contains_language_entries(sample_docs):
     assert "a.md" in "".join(data["en"].keys())
 
 
+def test_translate_directory_rejects_source_inside_output(tmp_path: Path):
+    """Test that translation fails when source directory is inside output directory."""
+    out = tmp_path / "translations"
+    src = out / "en"
+    src.mkdir(parents=True)
+    (src / "test.md").write_text("# Test", encoding="utf-8")
+    
 def test_cache_dir_writes_to_custom_location(sample_docs, tmp_path):
     src, out = sample_docs
     cache_location = tmp_path / "custom_cache"
@@ -211,6 +218,37 @@ def test_cache_dir_writes_to_custom_location(sample_docs, tmp_path):
         languages=["de"],
         model="test-model",
         translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    with pytest.raises(ValueError, match="source directory .* is inside output directory"):
+        asyncio.run(translator.translate_directory(src, out))
+
+
+def test_translate_directory_rejects_output_inside_source(tmp_path: Path):
+    """Test that translation fails when output directory is inside source directory."""
+    src = tmp_path / "docs"
+    out = src / "translations"
+    src.mkdir()
+    (src / "test.md").write_text("# Test", encoding="utf-8")
+    
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    with pytest.raises(ValueError, match="output directory .* is inside source directory"):
+        asyncio.run(translator.translate_directory(src, out))
+
+
+def test_translate_directory_allows_sibling_directories(tmp_path: Path):
+    """Test that translation works when source and output are sibling directories."""
+    src = tmp_path / "docs"
+    out = tmp_path / "translations"
+    src.mkdir()
+    (src / "test.md").write_text("# Test", encoding="utf-8")
         max_concurrency=1,
         force_translation=False,
         cache_dir=cache_location,
@@ -238,6 +276,36 @@ def test_cache_dir_defaults_to_source_dir(sample_docs):
         languages=["de"],
         model="test-model",
         translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    async def fake(self, content: str, target_lang: str) -> str:
+        return f"[{target_lang}] {content}"
+    
+    translator.translate_text = fake.__get__(translator, Translator)
+    
+    # Should not raise an error
+    asyncio.run(translator.translate_directory(src, out))
+    
+    assert (out / "de" / "test.md").exists()
+
+
+def test_translate_directory_rejects_same_directory(tmp_path: Path):
+    """Test that translation fails when source and output are the same directory."""
+    src = tmp_path / "docs"
+    src.mkdir()
+    (src / "test.md").write_text("# Test", encoding="utf-8")
+    
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+    )
+    
+    # Using the same directory for both source and output should fail
+    with pytest.raises(ValueError, match="source and output directories are the same"):
+        asyncio.run(translator.translate_directory(src, src))
         max_concurrency=1,
         force_translation=False,
         cache_dir=None,  # Explicitly set to None
