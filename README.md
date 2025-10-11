@@ -42,6 +42,7 @@ mdx run [OPTIONS] DOCS_SRC OUT_DIR
 * `--api-env-key TEXT` – Env var to read (default: `OPENAI_API_KEY`)
 * `--base-url TEXT` – Custom base URL (e.g., OpenRouter)
 * `--prompt-path PATH` – Use a custom prompt file instead of the default
+* `--cache-dir PATH` – Directory for cache file (defaults to source directory)
 
 ## Examples
 
@@ -65,10 +66,16 @@ Custom prompt:
 mdx run docs_src out --languages de --prompt-path ./my_prompt.txt
 ```
 
+Custom cache directory (for read-only CI/CD):
+
+```bash
+mdx run docs_src out --languages de --cache-dir /tmp
+```
+
 ## Behavior
 
 * **Prompt:** default lives at `~/.mdxlate/translation_instruction.txt` (created by `mdx init`). You can edit it freely or pass `--prompt-path`.
-* **Cache:** re-translation is skipped if *file bytes + prompt content + model + language* are unchanged.
+* **Cache:** re-translation is skipped if *file bytes + prompt content + model + language* are unchanged. By default, cache is written to source directory as `.mdxlate.hashes.json`. Use `--cache-dir` for read-only environments.
 * **Structure:** each language gets its own mirror tree under `OUT_DIR/<lang>/`.
 
 ## Programmatic use
@@ -87,6 +94,7 @@ start_translation(
     api_key=None,       # pass explicitly or rely on env
     base_url=None,
     prompt_path=None,
+    cache_dir=None,     # optional: specify custom cache directory
 )
 ```
 
