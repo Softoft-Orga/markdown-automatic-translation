@@ -40,6 +40,7 @@ def run(
         base_url: str | None = typer.Option(None),
         prompt_path: Path | None = typer.Option(None, help="Path to custom translation instruction file"),
         force: bool = typer.Option(False, help="Force re-translation, bypassing cache"),
+        cache_dir: Path | None = typer.Option(None, help="Directory for cache file (defaults to source directory)"),
 ) -> None:
     api_key = api_key or os.getenv(api_env_key)
     client = make_client(provider=provider, api_key=api_key, base_url=base_url)
@@ -50,5 +51,6 @@ def run(
         model=model,
         translation_instruction_path=prompt_path,
         force_translation=force,
+        cache_dir=cache_dir,
     )
     asyncio.run(translator.translate_directory(docs_src, out_dir))
