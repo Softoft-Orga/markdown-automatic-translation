@@ -15,4 +15,5 @@ src/mdxlate.egg-info/requires.txt
 src/mdxlate.egg-info/top_level.txt
 tests/test_cache.py
 tests/test_cli.py
+tests/test_client.py
 tests/test_mdxlate.py
