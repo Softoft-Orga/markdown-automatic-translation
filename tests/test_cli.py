@@ -1,10 +1,10 @@
 import sys
-import tomllib
 from pathlib import Path
 
 # Ensure local src/ is importable before any mdxlate imports
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+import pytest
 from typer.testing import CliRunner
 
 from mdxlate.cli import app
@@ -47,8 +47,11 @@ def test_init_help_shows_documentation():
     assert "prompt" in result.stdout.lower() and "path" in result.stdout.lower()
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="tomllib requires Python 3.11+")
 def test_pyproject_defines_mdx_command():
     """Verify that pyproject.toml defines 'mdx' as the CLI command, not 'mdxlate'."""
+    import tomllib
+    
     pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
     with open(pyproject_path, "rb") as f:
         config = tomllib.load(f)
