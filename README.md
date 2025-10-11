@@ -101,7 +101,6 @@ After fixing the issue (e.g., waiting for rate limits to reset), re-run the tran
 * **Prompt:** default lives at `~/.mdxlate/translation_instruction.txt` (created by `mdx init`). You can edit it freely or pass `--prompt-path`.
 * **Cache:** re-translation is skipped if *file bytes + prompt content + model + language* are unchanged. By default, cache is written to source directory as `.mdxlate.hashes.json`. Use `--cache-dir` for read-only environments.
 * **Structure:** each language gets its own mirror tree under `OUT_DIR/<lang>/`.
-* **Error handling:** if any file translation fails, the process continues with other files. Failed translations are logged and saved to `.mdxlate.failures.json` for debugging. The cache is still saved for successful translations, avoiding wasted API costs.
 
 ## Programmatic use
 
