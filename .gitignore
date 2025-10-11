@@ -16,6 +16,9 @@ parts/
 sdist/
 var/
 wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
@@ -33,6 +36,10 @@ htmlcov/
 
 # Virtual environments
 venv/
+env/
+ENV/
+
+# IDEs
 ENV/
 env/
 
