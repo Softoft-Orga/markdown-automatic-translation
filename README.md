@@ -122,6 +122,10 @@ start_translation(
 )
 ```
 
+## Integrations
+
+* **[Jekyll](docs/integrations/jekyll.md)** – Complete guide for translating Jekyll sites with frontmatter preservation
+
 ## Files of interest
 
 * `mdxlate/cli.py` – Typer CLI (`mdx init`, `mdx run`)
