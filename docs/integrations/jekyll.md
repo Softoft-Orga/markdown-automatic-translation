@@ -1,3 +1,7 @@
+---
+title: Jekyll Integration Guide
+---
+
 # Jekyll Integration Guide
 
 This guide explains how to use `mdxlate` to translate Jekyll sites into multiple languages.

@@ -3,6 +3,19 @@
 Translate Markdown docs into multiple languages using LLMs.  
 Batteries included: prompt template, CLI, OpenAI/OpenRouter provider switch, and a simple change-detection cache.
 
+## 📚 Documentation
+
+**[Read the full documentation →](docs/)**
+
+- **[Getting Started](docs/index.md)** – Installation and quick start
+- **[CLI Reference](docs/cli.md)** – Complete command-line guide
+- **[Programmatic Usage](docs/programmatic.md)** – Python API and examples
+- **[Caching System](docs/caching.md)** – How the cache works
+- **[Custom Prompt](docs/custom-prompt.md)** – Customize translations
+- **[Error Handling](docs/error-handling.md)** – Failure recovery
+- **[Development Guide](docs/development.md)** – Contributing
+- **[FAQ](docs/faq.md)** – Troubleshooting
+
 ## Install
 ```bash
 pip install -e .
