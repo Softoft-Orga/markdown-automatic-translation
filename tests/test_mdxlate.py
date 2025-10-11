@@ -198,3 +198,59 @@ def test_state_file_contains_language_entries(sample_docs):
     data = json.loads(state_path.read_text(encoding="utf-8"))
     assert "en" in data and "de" in data
     assert "a.md" in "".join(data["en"].keys())
+
+
+def test_cache_dir_writes_to_custom_location(sample_docs, tmp_path):
+    src, out = sample_docs
+    cache_location = tmp_path / "custom_cache"
+    cache_location.mkdir()
+
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+        max_concurrency=1,
+        force_translation=False,
+        cache_dir=cache_location,
+    )
+
+    async def fake_translate(self, content: str, target_lang: str) -> str:
+        return f"[{target_lang}] {content}"
+
+    translator.translate_text = fake_translate.__get__(translator, Translator)
+    asyncio.run(translator.translate_directory(src, out))
+
+    from mdxlate.cache import STATE_FILE_NAME
+
+    # Cache should be in custom location, not source
+    assert (cache_location / STATE_FILE_NAME).exists()
+    assert not (src / STATE_FILE_NAME).exists()
+
+
+def test_cache_dir_defaults_to_source_dir(sample_docs):
+    src, out = sample_docs
+    
+    translator = Translator(
+        client=None,
+        base_language="en",
+        languages=["de"],
+        model="test-model",
+        translation_instruction_text="SYSTEM PROMPT",
+        max_concurrency=1,
+        force_translation=False,
+        cache_dir=None,  # Explicitly set to None
+    )
+
+    async def fake_translate(self, content: str, target_lang: str) -> str:
+        return f"[{target_lang}] {content}"
+
+    translator.translate_text = fake_translate.__get__(translator, Translator)
+    asyncio.run(translator.translate_directory(src, out))
+
+    from mdxlate.cache import STATE_FILE_NAME
+
+    # Cache should default to source directory
+    assert (src / STATE_FILE_NAME).exists()
+

@@ -44,3 +44,14 @@ def test_init_help_shows_documentation():
     assert result.exit_code == 0
     assert "Initialize editable translation prompt file" in result.stdout
     assert "prompt" in result.stdout.lower() and "path" in result.stdout.lower()
+
+
+def test_run_help_shows_cache_dir_option():
+    result = runner.invoke(app, ["run", "--help"])
+    
+    assert result.exit_code == 0
+    # The output contains ANSI codes, so we check for "cache" and "dir" separately
+    assert "cache" in result.stdout.lower()
+    assert "dir" in result.stdout.lower()
+    assert "Directory for cache file" in result.stdout
+

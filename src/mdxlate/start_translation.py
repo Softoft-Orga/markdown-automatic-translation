@@ -14,6 +14,7 @@ def start_translation(
         provider: Provider = "openai",
         api_key: str | None = None,
         base_url: str | None = None,
+        cache_dir: Path | None = None,
 ):
     client = make_client(provider=provider, api_key=api_key, base_url=base_url)
     translator = Translator(
@@ -21,5 +22,6 @@ def start_translation(
         base_language=base_language,
         languages=languages,
         model=model,
+        cache_dir=cache_dir,
     )
     asyncio.run(translator.translate_directory(docs_src, out_dir))
