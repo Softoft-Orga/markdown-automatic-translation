@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mdxlate"
 version = "1.1.4"
-description = "Translate Markdown documentation into multiple languages using LLMs with smart caching, custom prompts, and robust error handling"
+description = "Translate Markdown docs into multiple languages using LLMs with smart caching and custom prompts"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -44,7 +44,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Softoft-Orga/markdown-automatic-translation"
+Homepage = "https://softoft-orga.github.io/markdown-automatic-translation/"
 Documentation = "https://softoft-orga.github.io/markdown-automatic-translation/"
 Repository = "https://github.com/Softoft-Orga/markdown-automatic-translation"
 Issues = "https://github.com/Softoft-Orga/markdown-automatic-translation/issues"
