@@ -44,3 +44,21 @@ def test_init_help_shows_documentation():
     assert result.exit_code == 0
     assert "Initialize editable translation prompt file" in result.stdout
     assert "prompt" in result.stdout.lower() and "path" in result.stdout.lower()
+
+
+def test_pyproject_defines_mdx_command():
+    """Verify that pyproject.toml defines 'mdx' as the CLI command, not 'mdxlate'."""
+    import tomllib
+    
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
+        config = tomllib.load(f)
+    
+    scripts = config.get("project", {}).get("scripts", {})
+    
+    # Verify 'mdx' is the command name
+    assert "mdx" in scripts, "pyproject.toml should define 'mdx' as the CLI command"
+    assert scripts["mdx"] == "mdxlate.cli:app"
+    
+    # Verify old 'mdxlate' command is not defined
+    assert "mdxlate" not in scripts, "pyproject.toml should not define 'mdxlate' command (use 'mdx' instead)"
