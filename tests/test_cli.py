@@ -44,3 +44,23 @@ def test_init_help_shows_documentation():
     assert result.exit_code == 0
     assert "Initialize editable translation prompt file" in result.stdout
     assert "prompt" in result.stdout.lower() and "path" in result.stdout.lower()
+
+
+def test_run_help_shows_prompt_path_option():
+    result = runner.invoke(app, ["run", "--help"])
+    
+    assert result.exit_code == 0
+    # Check for the option name and description
+    output_lower = result.stdout.lower()
+    assert "prompt" in output_lower and "path" in output_lower
+    assert "custom" in output_lower and "translation" in output_lower
+
+
+def test_run_help_shows_force_option():
+    result = runner.invoke(app, ["run", "--help"])
+    
+    assert result.exit_code == 0
+    # Check for the option name and description
+    output_lower = result.stdout.lower()
+    assert "force" in output_lower
+    assert "cache" in output_lower
