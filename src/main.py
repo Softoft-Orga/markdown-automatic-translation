@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from mdxlate.cli import start_translation
+from mdxlate.start_translation import start_translation
 
 if __name__ == '__main__':
     start_translation(

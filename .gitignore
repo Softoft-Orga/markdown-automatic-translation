@@ -19,12 +19,19 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Testing
 .pytest_cache/
 .tox/
 .coverage
 .coverage.*
+.cache
 htmlcov/
 
 # Virtual environments
@@ -33,11 +40,23 @@ env/
 ENV/
 
 # IDEs
+ENV/
+env/
+
+# IDEs
+.venv
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
 
 # OS
 .DS_Store

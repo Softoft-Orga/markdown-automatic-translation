@@ -39,6 +39,7 @@ class Translator:
             translation_instruction_path: Path | None = None,
             max_concurrency: int = 8,
             force_translation: bool = False,
+            cache_dir: Path | None = None,
     ) -> None:
         self.client = client
         self.base_language = base_language
@@ -53,6 +54,7 @@ class Translator:
         self.used_output_paths: set[str] = set()
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.force_translation = force_translation
+        self.cache_dir = cache_dir
 
     @tenacity.retry(wait=wait_exponential(multiplier=2, min=2, max=60), stop=stop_after_attempt(6))
     async def translate_text(self, content: str, target_language: str) -> str:
@@ -117,7 +119,8 @@ class Translator:
                     d.rmdir()
 
     async def translate_directory(self, source_dir: Path, output_dir: Path) -> None:
-        cache = TranslationCache(source_dir)
+        cache_root = self.cache_dir if self.cache_dir is not None else source_dir
+        cache = TranslationCache(cache_root)
         cache.load()
         tasks: list[asyncio.Task] = []
         for md_file in source_dir.rglob("*.md"):

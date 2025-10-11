@@ -28,7 +28,11 @@ openai_stub = ModuleType("openai")
 
 
 class _AsyncOpenAI:
-    pass
+    def __init__(self, api_key=None, base_url=None, **kwargs):
+        self.api_key = api_key
+        self.base_url = base_url
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 openai_stub.AsyncOpenAI = _AsyncOpenAI
