@@ -73,11 +73,35 @@ Custom cache directory (for read-only CI/CD):
 mdx run docs_src out --languages de --cache-dir /tmp
 ```
 
+## Error Handling
+
+If any file fails to translate (e.g., due to API errors, rate limits, or network issues), mdxlate will:
+
+1. **Continue processing** other files instead of crashing
+2. **Save the cache** for successful translations
+3. **Generate a failure report** at `.mdxlate.failures.json` with details about what failed
+
+Example failure report:
+```json
+{
+  "failures": [
+    {
+      "file": "docs/advanced.md",
+      "error": "Rate limit exceeded",
+      "error_type": "RateLimitError"
+    }
+  ]
+}
+```
+
+After fixing the issue (e.g., waiting for rate limits to reset), re-run the translation. Only failed files will be retried thanks to the cache.
+
 ## Behavior
 
 * **Prompt:** default lives at `~/.mdxlate/translation_instruction.txt` (created by `mdx init`). You can edit it freely or pass `--prompt-path`.
 * **Cache:** re-translation is skipped if *file bytes + prompt content + model + language* are unchanged. By default, cache is written to source directory as `.mdxlate.hashes.json`. Use `--cache-dir` for read-only environments.
 * **Structure:** each language gets its own mirror tree under `OUT_DIR/<lang>/`.
+* **Error handling:** if any file translation fails, the process continues with other files. Failed translations are logged and saved to `.mdxlate.failures.json` for debugging. The cache is still saved for successful translations, avoiding wasted API costs.
 
 ## Programmatic use
 
