@@ -1,0 +1,28 @@
+# Jekyll configuration for mdxlate
+
+title: mdxlate
+description: Translate Markdown docs into multiple languages using LLMs
+url: "https://mdxlate.softoft.de"
+baseurl: ""
+
+# Build settings
+markdown: kramdown
+theme: minima
+
+# Exclude files from Jekyll build
+exclude:
+  - .git/
+  - .github/
+  - .gitignore
+  - src/
+  - tests/
+  - data/
+  - pyproject.toml
+  - uv.lock
+  - "*.egg-info"
+  - __pycache__/
+  - "*.py"
+
+# Include CNAME for GitHub Pages custom domain
+include:
+  - CNAME
