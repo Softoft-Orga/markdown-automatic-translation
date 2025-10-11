@@ -3,7 +3,7 @@ from pathlib import Path
 
 from mdxlate.start_translation import start_translation
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start_translation(
         docs_src=Path("../data/test-markdown/en"),
         api_key=os.getenv("OPEN_ROUTER_API_KEY"),
