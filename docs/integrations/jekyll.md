@@ -11,6 +11,11 @@ Jekyll is a static site generator that uses Markdown files with YAML frontmatter
 ### 1. Install mdxlate
 
 ```bash
+pip install mdxlate
+```
+
+Or for development from source:
+```bash
 pip install -e .
 ```
 
@@ -235,10 +240,10 @@ jobs:
   translate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
       
