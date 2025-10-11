@@ -25,16 +25,15 @@ jobs:
         run: uv sync
 
       - name: Install development tools
-        run: uv tool install ruff && uv tool install mypy
+        run: |
+          uv tool install ruff
+          uv tool install mypy
 
       - name: Lint with ruff
-        run: |
-          ruff check src tests
+        run: uv tool run ruff check src tests
 
       - name: Format check with ruff
-        run: |
-          ruff format --check src tests
+        run: uv tool run ruff format --check src tests
 
       - name: Type check with mypy
-        run: |
-          mypy src --ignore-missing-imports
+        run: uv tool run mypy src --ignore-missing-imports
