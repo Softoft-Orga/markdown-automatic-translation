@@ -90,6 +90,18 @@ def test_run_help_shows_cache_dir_option():
     result = runner.invoke(app, ["run", "--help"])
 
     assert result.exit_code == 0
+    # The output contains ANSI codes, so we need to strip them for reliable text matching
+    import re
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    clean_output = ansi_escape.sub('', result.stdout)
+    
+    assert "cache" in clean_output.lower()
+    assert "dir" in clean_output.lower()
+    # The text may be wrapped across lines in the formatted output
+    assert "Directory for cache" in clean_output
+    assert "defaults to" in clean_output
+    assert "source directory" in clean_output
+
     # The output contains ANSI codes, so we check for "cache" and "dir" separately
     assert "cache" in result.stdout.lower()
     assert "dir" in result.stdout.lower()

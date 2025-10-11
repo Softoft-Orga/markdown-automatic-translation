@@ -167,6 +167,7 @@ class Translator:
             if "Invalid directory configuration" in str(e):
                 raise
             # Otherwise, it's from relative_to failing, which is expected - continue
+        
 
         cache_root = self.cache_dir if self.cache_dir is not None else source_dir
         cache = TranslationCache(cache_root)

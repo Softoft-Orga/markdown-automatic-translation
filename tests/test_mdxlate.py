@@ -206,6 +206,7 @@ def test_translate_directory_rejects_source_inside_output(tmp_path: Path):
     src = out / "en"
     src.mkdir(parents=True)
     (src / "test.md").write_text("# Test", encoding="utf-8")
+    
 
     translator = Translator(
         client=None,
@@ -214,6 +215,7 @@ def test_translate_directory_rejects_source_inside_output(tmp_path: Path):
         model="test-model",
         translation_instruction_text="SYSTEM PROMPT",
     )
+    
 
     with pytest.raises(ValueError, match="source directory .* is inside output directory"):
         asyncio.run(translator.translate_directory(src, out))
@@ -232,6 +234,15 @@ def test_cache_dir_writes_to_custom_location(sample_docs, tmp_path):
         translation_instruction_text="SYSTEM PROMPT",
         cache_dir=cache_location,
     )
+    
+    async def fake_translate(self, content: str, target_lang: str) -> str:
+        return f"[{target_lang}] {content}"
+    
+    translator.translate_text = fake_translate.__get__(translator, Translator)
+    asyncio.run(translator.translate_directory(src, out))
+    
+    from mdxlate.cache import STATE_FILE_NAME
+    
 
     async def fake(self, content: str, target_lang: str) -> str:
         return f"[{target_lang}] {content}"
@@ -271,6 +282,7 @@ def test_translate_directory_allows_sibling_directories(tmp_path: Path):
     out = tmp_path / "translations"
     src.mkdir()
     (src / "test.md").write_text("# Test", encoding="utf-8")
+    
 
     translator = Translator(
         client=None,
@@ -279,7 +291,7 @@ def test_translate_directory_allows_sibling_directories(tmp_path: Path):
         model="test-model",
         translation_instruction_text="SYSTEM PROMPT",
     )
-
+    
     async def fake_translate(self, content: str, target_lang: str) -> str:
         return f"[{target_lang}] {content}"
 
@@ -308,6 +320,12 @@ def test_cache_dir_defaults_to_source_dir(sample_docs):
 
     # Should not raise an error
     asyncio.run(translator.translate_directory(src, out))
+    
+    # Check that translation happened
+    assert (out / "de" / "a.md").exists()
+    
+    from mdxlate.cache import STATE_FILE_NAME
+    
 
     # Check that files were translated
     assert (out / "de" / "a.md").exists()
@@ -336,3 +354,4 @@ def test_translate_directory_rejects_same_directory(tmp_path: Path):
     # Using the same directory for both source and output should fail
     with pytest.raises(ValueError, match="source and output directories are the same"):
         asyncio.run(translator.translate_directory(src, src))
+
