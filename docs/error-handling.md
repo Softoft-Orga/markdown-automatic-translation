@@ -402,8 +402,11 @@ jobs:
         with:
           python-version: '3.10'
       
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      
       - name: Install mdxlate
-        run: pip install mdxlate
+        run: uv pip install mdxlate
       
       - name: Initialize prompt
         run: mdx init
