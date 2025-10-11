@@ -7,3 +7,5 @@ Requires-Dist: typer>=0.19.2
 Requires-Dist: openai>=2.3.0
 Requires-Dist: tenacity>=8.2
 Requires-Dist: pytest>=8.4.2
+Requires-Dist: setuptools>=69
+Requires-Dist: wheel>=0.45.1

@@ -12,6 +12,8 @@ dependencies = [
     "openai>=2.3.0",
     "tenacity>=8.2",
     "pytest>=8.4.2",
+    "setuptools>=69",
+    "wheel>=0.45.1",
 ]
 
 [project.scripts]
