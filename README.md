@@ -42,6 +42,7 @@ mdx run [OPTIONS] DOCS_SRC OUT_DIR
 * `--api-env-key TEXT` – Env var to read (default: `OPENAI_API_KEY`)
 * `--base-url TEXT` – Custom base URL (e.g., OpenRouter)
 * `--prompt-path PATH` – Use a custom prompt file instead of the default
+* `--force` – Force re-translation, bypassing cache
 * `--cache-dir PATH` – Directory for cache file (defaults to source directory)
 
 ## Examples

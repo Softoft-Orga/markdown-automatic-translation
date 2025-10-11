@@ -47,6 +47,24 @@ def test_init_help_shows_documentation():
     assert "prompt" in result.stdout.lower() and "path" in result.stdout.lower()
 
 
+def test_run_help_shows_prompt_path_option():
+    result = runner.invoke(app, ["run", "--help"])
+    
+    assert result.exit_code == 0
+    # Check for the option name and description
+    output_lower = result.stdout.lower()
+    assert "prompt" in output_lower and "path" in output_lower
+    assert "custom" in output_lower and "translation" in output_lower
+
+
+def test_run_help_shows_force_option():
+    result = runner.invoke(app, ["run", "--help"])
+    
+    assert result.exit_code == 0
+    # Check for the option name and description
+    output_lower = result.stdout.lower()
+    assert "force" in output_lower
+    assert "cache" in output_lower
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="tomllib requires Python 3.11+")
 def test_pyproject_defines_mdx_command():
     """Verify that pyproject.toml defines 'mdx' as the CLI command, not 'mdxlate'."""
