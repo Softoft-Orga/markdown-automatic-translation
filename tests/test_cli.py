@@ -1,4 +1,5 @@
 import sys
+import tomllib
 from pathlib import Path
 
 # Ensure local src/ is importable before any mdxlate imports
@@ -48,8 +49,6 @@ def test_init_help_shows_documentation():
 
 def test_pyproject_defines_mdx_command():
     """Verify that pyproject.toml defines 'mdx' as the CLI command, not 'mdxlate'."""
-    import tomllib
-    
     pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
     with open(pyproject_path, "rb") as f:
         config = tomllib.load(f)
