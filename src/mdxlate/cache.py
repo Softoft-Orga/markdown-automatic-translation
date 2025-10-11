@@ -29,13 +29,17 @@ class TranslationCache:
     def _sha_bytes(self, b: bytes) -> str:
         return hashlib.sha256(b).hexdigest()
 
+    def _normalize_path(self, rel: Path) -> str:
+        """Normalize to POSIX format for cross-platform cache keys."""
+        return str(rel).replace("\\", "/")
+
     def calc_key(self, rel: Path, lang: str, file_bytes: bytes, prompt: str, model: str) -> str:
         file_hash = self._sha_bytes(file_bytes)
         cfg_hash = self._sha_str("|".join([prompt, model, lang]))
-        return self._sha_str("|".join([str(rel).replace("\\", "/"), file_hash, cfg_hash]))
+        return self._sha_str("|".join([self._normalize_path(rel), file_hash, cfg_hash]))
 
     def is_up_to_date(self, rel: Path, lang: str, key: str) -> bool:
-        return self.state.get(lang, {}).get(str(rel)) == key
+        return self.state.get(lang, {}).get(self._normalize_path(rel)) == key
 
     def mark(self, rel: Path, lang: str, key: str) -> None:
-        self.state.setdefault(lang, {})[str(rel)] = key
+        self.state.setdefault(lang, {})[self._normalize_path(rel)] = key

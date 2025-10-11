@@ -29,6 +29,36 @@ env/
 # IDE
 .idea/
 .vscode/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+.cache
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+ENV/
+env/
+
+# IDEs
+.venv
+
+# IDE
+.vscode/
+.idea/
 *.swp
 *.swo
 *~

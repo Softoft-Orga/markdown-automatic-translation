@@ -12,24 +12,19 @@ from .translator import Translator
 app = typer.Typer(add_completion=False)
 
 
-def start_translation(
-        docs_src: Path,
-        out_dir: Path,
-        base_language: str,
-        languages: list[str],
-        model: str = "google/gemini-2.5-flash-lite",
-        provider: Provider = "openai",
-        api_key: str | None = None,
-        base_url: str | None = None,
-):
-    client = make_client(provider=provider, api_key=api_key, base_url=base_url)
-    translator = Translator(
-        client=client,
-        base_language=base_language,
-        languages=languages,
-        model=model,
+@app.command()
+def init(
+    prompt_path: Path = typer.Option(
+        Path.home() / ".mdxlate" / "translation_instruction.txt",
+        help="Path for editable prompt template"
     )
-    asyncio.run(translator.translate_directory(docs_src, out_dir))
+) -> None:
+    """Initialize editable translation prompt file."""
+    from .translator import write_default_translation_instruction
+    result = write_default_translation_instruction(prompt_path)
+    typer.echo(f"✓ Created prompt template at: {result}")
+    typer.echo(f"\nEdit this file to customize translations.")
+    typer.echo(f"Use: mdx run ... --prompt-path {result}")
 
 
 @app.command()
@@ -43,6 +38,9 @@ def run(
         api_key: str | None = typer.Option(None),
         api_env_key: str = typer.Option("OPENAI_API_KEY"),
         base_url: str | None = typer.Option(None),
+        prompt_path: Path | None = typer.Option(None, help="Path to custom translation instruction file"),
+        force: bool = typer.Option(False, help="Force re-translation, bypassing cache"),
+        cache_dir: Path | None = typer.Option(None, help="Directory for cache file (defaults to source directory)"),
 ) -> None:
     api_key = api_key or os.getenv(api_env_key)
     client = make_client(provider=provider, api_key=api_key, base_url=base_url)
@@ -51,5 +49,8 @@ def run(
         base_language=base_language,
         languages=languages,
         model=model,
+        translation_instruction_path=prompt_path,
+        force_translation=force,
+        cache_dir=cache_dir,
     )
     asyncio.run(translator.translate_directory(docs_src, out_dir))
