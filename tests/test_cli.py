@@ -64,3 +64,12 @@ def test_pyproject_defines_mdx_command():
     
     # Verify old 'mdxlate' command is not defined
     assert "mdxlate" not in scripts, "pyproject.toml should not define 'mdxlate' command (use 'mdx' instead)"
+def test_run_help_shows_cache_dir_option():
+    result = runner.invoke(app, ["run", "--help"])
+    
+    assert result.exit_code == 0
+    # The output contains ANSI codes, so we check for "cache" and "dir" separately
+    assert "cache" in result.stdout.lower()
+    assert "dir" in result.stdout.lower()
+    assert "Directory for cache file" in result.stdout
+

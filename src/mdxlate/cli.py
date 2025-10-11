@@ -38,6 +38,7 @@ def run(
         api_key: str | None = typer.Option(None),
         api_env_key: str = typer.Option("OPENAI_API_KEY"),
         base_url: str | None = typer.Option(None),
+        cache_dir: Path | None = typer.Option(None, help="Directory for cache file (defaults to source directory)"),
 ) -> None:
     api_key = api_key or os.getenv(api_env_key)
     client = make_client(provider=provider, api_key=api_key, base_url=base_url)
@@ -46,5 +47,6 @@ def run(
         base_language=base_language,
         languages=languages,
         model=model,
+        cache_dir=cache_dir,
     )
     asyncio.run(translator.translate_directory(docs_src, out_dir))
