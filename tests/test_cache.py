@@ -98,17 +98,21 @@ def test_mark_and_is_up_to_date_with_different_path_styles(tmp_path):
     assert key == key_posix
 
     # CRITICAL: is_up_to_date should return True regardless of path style used
-    assert cache.is_up_to_date(rel_posix, "de", key_posix), \
+    assert cache.is_up_to_date(rel_posix, "de", key_posix), (
         "Cache should find entry marked with Windows path when checking with POSIX path"
-    assert cache.is_up_to_date(rel_windows, "de", key), \
+    )
+    assert cache.is_up_to_date(rel_windows, "de", key), (
         "Cache should find entry marked with Windows path when checking with Windows path"
+    )
 
     # Verify state uses normalized paths (forward slashes)
-    assert "dir/file.md" in cache.state["de"], \
+    assert "dir/file.md" in cache.state["de"], (
         "State should store paths with forward slashes for cross-platform compatibility"
-    
+    )
+
     # Test the reverse: mark with POSIX, check with Windows-style
     cache2 = TranslationCache(tmp_path)
     cache2.mark(rel_posix, "fr", key_posix)
-    assert cache2.is_up_to_date(rel_windows, "fr", key_posix), \
+    assert cache2.is_up_to_date(rel_windows, "fr", key_posix), (
         "Cache should find entry marked with POSIX path when checking with Windows path"
+    )

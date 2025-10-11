@@ -106,6 +106,43 @@ start_translation(
 * `mdxlate/translator.py` – translation, hashing, and I/O
 * `mdxlate/translation_instruction.txt` – default prompt template
 
+## Development
+
+### Setup
+
+```bash
+pip install -e .
+pip install ruff mypy pytest
+```
+
+### Code Quality
+
+This project uses **Ruff** for linting and formatting, and **Mypy** for type checking:
+
+```bash
+# Lint code
+ruff check src tests
+
+# Auto-fix linting issues
+ruff check --fix src tests
+
+# Format code
+ruff format src tests
+
+# Type check
+mypy src --ignore-missing-imports
+
+# Run tests
+pytest tests/
+```
+
+### CI/CD
+
+The `.github/workflows/quality.yml` workflow runs automatically on every push and PR:
+- ✅ Ruff linting
+- ✅ Ruff formatting check
+- ✅ Mypy type checking
+
 ## License
 
 MIT

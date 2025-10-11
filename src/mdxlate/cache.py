@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import hashlib
 import json
 from pathlib import Path
 
 STATE_FILE_NAME = ".mdxlate.hashes.json"
+
 
 class TranslationCache:
     def __init__(self, root: Path, state_file_name: str = STATE_FILE_NAME) -> None:
