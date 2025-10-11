@@ -8,8 +8,8 @@ version = "1.0.0"
 description = "Markdown translations with editable prompt"
 requires-python = ">=3.10"
 dependencies = [
-    "typer>=0.12",
-    "openai>=1.40",
+    "typer>=0.19.2",
+    "openai>=2.3.0",
     "tenacity>=8.2",
     "pytest>=8.4.2",
 ]
