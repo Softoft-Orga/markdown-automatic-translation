@@ -151,3 +151,5 @@ If some files fail to translate, mdxlate continues processing others and generat
 - Batch translate markdown content
 - Migrate documentation to new languages
 - Update translations when source changes (using cache)
+
+This was developed by Tobias Bück @ [Softoft](https://softoft.de)

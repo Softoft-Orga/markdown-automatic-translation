@@ -15,13 +15,70 @@ from mdxlate.cache import TranslationCache
 logger = logging.getLogger(__name__)
 
 
-def default_translation_instruction_path() -> Path:
-    return Path(__file__).parent / "translation_instruction.txt"
-
-
 def read_default_translation_instruction() -> str:
-    p = default_translation_instruction_path()
-    return p.read_text(encoding="utf-8")
+    return """
+    You are a world-class technical translator with deep expertise in both Python software and VitePress Markdown documentation. Your task is to translate the provided Markdown file into the target language with extreme precision.
+
+Your translations will be read by other developers, so technical accuracy and the use of standard, idiomatic terminology are paramount.
+
+---
+
+### PRIMARY DIRECTIVE
+Return **ONLY** the fully translated Markdown file content. Do not add any commentary, explanations, or notes before or after the content. Your output must be the raw, translated text, ready to be saved directly into a `.md` file.
+
+---
+
+### CATEGORY 1: UNTOUCHABLE ELEMENTS (DO NOT TRANSLATE OR ALTER)
+These elements MUST remain 100% identical to the source.
+
+1.  **Code Blocks & Inline Code:**
+    * All fenced code blocks (```...```) and indented code blocks must be preserved exactly.
+    * All inline code snippets (`like_this`) are not to be translated.
+    * Programming language keywords, variable names, function names, parameters, and class names are a universal language for developers and **must never be translated**.
+
+2.  **URLs, File Paths, and Placeholders:**
+    * Absolute and relative URLs (`/guides/getting-started.html`).
+    * File paths (`./src/components/MyComponent.vue`).
+    * Template placeholders or component slots like `{{ variable }}`, `{% raw %}{% endraw %}`, or `{content}`.
+
+3.  **HTML/Vue Components:**
+    * All HTML tags (`<div>`, `<p>`, `<img>`) and custom Vue components (`<CustomCard>`, `<CodeGroup>`).
+    * All attributes and their values (`class="custom-class"`, `src="..."`, `:dark="true"`).
+
+---
+
+### CATEGORY 2: STRUCTURAL ELEMENTS (PRESERVE STRUCTURE, TRANSLATE TEXT)
+For these elements, you must translate the visible text content while keeping the surrounding syntax intact.
+
+1.  **YAML Frontmatter:**
+    * Preserve the `---` delimiters.
+    * **Do not** translate the keys (e.g., `layout`, `title`, `description`, `hero`).
+    * Translate **only** the string values associated with the keys (e.g., `tagline: "Translate this text."`).
+
+2.  **Markdown Syntax:**
+    * Heading levels (`#`, `##`) must be preserved. Translate only the heading text.
+    * Lists, blockquotes, and tables must maintain their structure. Translate only the text within them.
+
+---
+
+### CATEGORY 3: CONTENT TRANSLATION RULES
+These rules apply to all general text content that is eligible for translation.
+
+1.  **Reserved Technical Keywords (Keep in English):**
+    * The following terms must remain in English, even when they appear in regular sentences, to maintain technical consistency.
+    * **Glossary:** `class`, `def`, `async`, `await`, `client`, `model`, `import`, `script setup`, `layout`, `VitePress`, `YAML`, `Markdown`, `Docker`, `API`, `REST`, `JSON`, `HTML`, `CSS`, `JavaScript`, `TypeScript`, `Vue`, `Python`, `FastAPI`, `Flask`.
+    * *Example*: "This Python `class` is part of the API." → "Diese Python-`class` ist Teil der API."
+
+2.  **Style and Tone:**
+    * Maintain a clear, concise, and professional tone suitable for technical documentation.
+    * Use industry-standard terminology for the target language (e.g., for German, "Repository" is better than "Ablage").
+    * Follow the capitalization rules of the target language, but preserve original capitalization for acronyms (e.g., `JSON`, `REST`) and the keywords in the glossary.
+
+---
+
+### FINAL CHECK
+Before finalizing your response, ensure you have followed the **Primary Directive**. The output must be free of any extra text or Markdown code fences.
+"""
 
 
 def write_default_translation_instruction(dest: Path) -> Path:
@@ -33,16 +90,16 @@ def write_default_translation_instruction(dest: Path) -> Path:
 
 class Translator:
     def __init__(
-        self,
-        client: AsyncOpenAI,
-        base_language: str,
-        languages: list[str],
-        model: str,
-        translation_instruction_text: str | None = None,
-        translation_instruction_path: Path | None = None,
-        max_concurrency: int = 8,
-        force_translation: bool = False,
-        cache_dir: Path | None = None,
+            self,
+            client: AsyncOpenAI,
+            base_language: str,
+            languages: list[str],
+            model: str,
+            translation_instruction_text: str | None = None,
+            translation_instruction_path: Path | None = None,
+            max_concurrency: int = 8,
+            force_translation: bool = False,
+            cache_dir: Path | None = None,
     ) -> None:
         self.client = client
         self.base_language = base_language
@@ -87,7 +144,8 @@ class Translator:
             out_file.write_text(translated, encoding="utf-8")
             print(out_file)
 
-    async def process_file(self, file_path: Path, source_root: Path, output_dir: Path, cache: TranslationCache) -> None | Exception:
+    async def process_file(self, file_path: Path, source_root: Path, output_dir: Path,
+                           cache: TranslationCache) -> None | Exception:
         """
         Process a single file, translating it to all configured languages.
         
@@ -187,23 +245,22 @@ class Translator:
             if "Invalid directory configuration" in str(e):
                 raise
             # Otherwise, it's from relative_to failing, which is expected - continue
-        
 
         cache_root = self.cache_dir if self.cache_dir is not None else source_dir
         cache = TranslationCache(cache_root)
         cache.load()
-        
+
         # Collect all markdown files
         md_files = list(source_dir.rglob("*.md"))
         tasks: list[asyncio.Task] = []
         for md_file in md_files:
             tasks.append(asyncio.create_task(self.process_file(md_file, source_dir, output_dir, cache)))
-        
+
         # Process all files, collecting exceptions instead of failing
         failures = []
         if tasks:
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Collect failures
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
@@ -215,10 +272,10 @@ class Translator:
                         "error_type": type(result).__name__
                     })
                     logger.error(f"Translation failed for {relative_path}: {result}")
-        
+
         # Save cache even if some files failed
         cache.save()
-        
+
         # Generate failure report if there were any failures
         if failures:
             failure_report_path = cache_root / ".mdxlate.failures.json"
@@ -232,5 +289,5 @@ class Translator:
             failure_report_path = cache_root / ".mdxlate.failures.json"
             if failure_report_path.exists():
                 failure_report_path.unlink()
-        
+
         self.clean_up_unused_files(output_dir)
