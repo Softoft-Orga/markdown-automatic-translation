@@ -5,7 +5,7 @@ Batteries included: prompt template, CLI, OpenAI/OpenRouter provider switch, and
 
 ## 📚 Documentation
 
-**[Read the full documentation →](docs/)**
+**[Read the full documentation →](mdxlate.softoft.de)**
 
 - **[Getting Started](docs/index.md)** – Installation and quick start
 - **[CLI Reference](docs/cli.md)** – Complete command-line guide
